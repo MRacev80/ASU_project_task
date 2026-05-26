@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Проект - АСУТП Tracker{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Проекты</h2>
+    </div>
+    <details class="create-project">
+      <summary>+ Создать проект</summary>
+      <form class="stack" method="post" action="/projects">
+        <input name="name" placeholder="Название проекта" required>
+        <input name="customer" placeholder="Заказчик">
+        <input name="automation_object" placeholder="Объект автоматизации">
+        <input name="project_manager" placeholder="Руководитель проекта">
+        <input name="documents_path" placeholder="Папка документов">
+        <button type="submit">Создать проект</button>
+      </form>
+    </details>
+    <div class="list">
+      {% for item in projects %}
+        <a class="project-link {% if project and item.id == project.id %}active{% endif %}" href="/projects/{{ item.id }}">
+          <span>{{ item.name }}</span>
+          <small>{{ item.customer or "Без заказчика" }}</small>
+        </a>
+      {% else %}
+        <p class="muted">Проектов пока нет.</p>
+      {% endfor %}
+    </div>
+  </section>
+</aside>
+
+<section class="workspace">
+  {% if project %}
+    <section class="project-head">
+      <div>
+        <h1>{{ project.name }}</h1>
+        <p>{{ project.customer or "Заказчик не указан" }} · {{ project.automation_object or "Объект не указан" }}</p>
+      </div>
+      <span class="status">{{ project.status }}</span>
+    </section>
+
+    <section class="stats">
+      <div><strong>{{ tasks|length }}</strong><span>задач</span></div>
+      <div><strong>{{ tasks|selectattr("status", "equalto", "В работе")|list|length }}</strong><span>в работе</span></div>
+      <div><strong>{{ tasks|selectattr("status", "equalto", "Заблокировано")|list|length }}</strong><span>заблокировано</span></div>
+      <div><strong>{{ documents|length }}</strong><span>документов</span></div>
+    </section>
+
+    <nav class="sheet-tabs" aria-label="Листы карточки проекта">
+      <a class="{% if active_tab == 'main' %}active{% endif %}" href="/projects/{{ project.id }}/main">Главная</a>
+      <a class="{% if active_tab == 'tasks' %}active{% endif %}" href="/projects/{{ project.id }}/tasks">Задачи</a>
+      <a class="{% if active_tab == 'budget' %}active{% endif %}" href="/projects/{{ project.id }}/budget">Бюджет</a>
+      <a class="{% if active_tab == 'procurement' %}active{% endif %}" href="/projects/{{ project.id }}/procurement">Закупки</a>
+      <a class="{% if active_tab == 'documents' %}active{% endif %}" href="/projects/{{ project.id }}/documents">Документы</a>
+      <a class="{% if active_tab == 'risks' %}active{% endif %}" href="/projects/{{ project.id }}/risks">Риски</a>
+      <a class="{% if active_tab == 'p3' %}active{% endif %}" href="/projects/{{ project.id }}/p3">P3.express</a>
+      <a class="{% if active_tab == 'events' %}active{% endif %}" href="/projects/{{ project.id }}/events">Журнал</a>
+      <a class="{% if active_tab == 'agents' %}active{% endif %}" href="/projects/{{ project.id }}/agents">Агенты</a>
+    </nav>
+
+    <section class="sheet">
+      {% if active_tab == "main" %}
+        {% include "tabs/main.html" %}
+      {% elif active_tab == "tasks" %}
+        {% include "tabs/tasks.html" %}
+      {% elif active_tab == "documents" %}
+        {% include "tabs/documents.html" %}
+      {% elif active_tab == "events" %}
+        {% include "tabs/events.html" %}
+      {% elif active_tab == "budget" %}
+        {% include "tabs/placeholder.html" with context %}
+      {% elif active_tab == "procurement" %}
+        {% include "tabs/placeholder.html" with context %}
+      {% elif active_tab == "risks" %}
+        {% include "tabs/placeholder.html" with context %}
+      {% elif active_tab == "p3" %}
+        {% include "tabs/placeholder.html" with context %}
+      {% elif active_tab == "agents" %}
+        {% include "tabs/placeholder.html" with context %}
+      {% endif %}
+    </section>
+  {% else %}
+    <section class="empty">
+      <h1>Создайте первый проект</h1>
+      <p>После создания проекта здесь появятся задачи, документы и журнал действий.</p>
+    </section>
+  {% endif %}
+</section>
+{% endblock %}

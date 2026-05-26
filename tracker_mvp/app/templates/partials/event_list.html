@@ -1,0 +1,11 @@
+<div class="events">
+  {% for event in events %}
+    <article>
+      <time>{{ event.created_at.strftime("%d.%m.%Y %H:%M") }}</time>
+      <strong>{{ event.event_type }}</strong>
+      <p>{{ event.description }}</p>
+    </article>
+  {% else %}
+    <p class="muted">Событий пока нет.</p>
+  {% endfor %}
+</div>

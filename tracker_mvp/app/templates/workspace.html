@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Папка проекта - АСУТП Tracker{% endblock %}
+
+{% block content %}
+<section class="workspace single">
+  <section class="panel">
+    <div class="panel-header">
+      <h1>Папка проекта</h1>
+    </div>
+    <p class="muted">
+      Откройте существующую папку проекта или создайте новую. Внутри папки будут храниться база, документы, архив, бэкапы и рабочая область агентов.
+    </p>
+
+    {% if active_workspace %}
+      <div class="notice">
+        Активная папка: <strong>{{ active_workspace }}</strong>
+      </div>
+    {% endif %}
+
+    {% if error %}
+      <div class="notice danger">{{ error }}</div>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Создать папку проекта</h2>
+    </div>
+    <form class="stack" method="post" action="/workspace/create">
+      <label>
+        Путь к папке проекта
+        <input name="path" placeholder="C:\Users\gami\Orgtask\03_Проекты\Кран" required>
+      </label>
+      <label>
+        Название проекта
+        <input name="project_name" required>
+      </label>
+      <label>
+        Заказчик
+        <input name="customer">
+      </label>
+      <label>
+        Объект автоматизации
+        <input name="automation_object">
+      </label>
+      <button type="submit">Создать и открыть</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Открыть существующую папку</h2>
+    </div>
+    <form class="stack" method="post" action="/workspace/open">
+      <label>
+        Путь к папке проекта
+        <input name="path" placeholder="C:\Users\gami\Orgtask\03_Проекты\Кран" required>
+      </label>
+      <button type="submit">Открыть</button>
+    </form>
+  </section>
+</section>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки - АСУТП Tracker{% endblock %}
+
+{% block content %}
+<section class="workspace single">
+  <section class="panel">
+    <div class="panel-header">
+      <h1>Настройки</h1>
+    </div>
+    <form class="stack" method="post" action="/settings">
+      <label>
+        Рабочая папка
+        <input name="workspace_path" value="{{ settings.get('workspace_path', '') }}">
+      </label>
+      <label>
+        Папка резервных копий
+        <input name="backup_path" value="{{ settings.get('backup_path', '') }}">
+      </label>
+      <label>
+        Архив документов
+        <input name="archive_path" value="{{ settings.get('archive_path', '') }}">
+      </label>
+      <button type="submit">Сохранить</button>
+    </form>
+  </section>
+</section>
+{% endblock %}

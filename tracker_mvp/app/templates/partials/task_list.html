@@ -1,0 +1,39 @@
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Статус</th>
+        <th>Задача</th>
+        <th>Тип</th>
+        <th>Исполнитель</th>
+        <th>Срок</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for task in tasks %}
+        <tr>
+          <td><span class="badge status-{{ task.status|replace(' ', '-') }}">{{ task.status }}</span></td>
+          <td>
+            <strong>{{ task.title }}</strong>
+            {% if task.description %}<small>{{ task.description }}</small>{% endif %}
+          </td>
+          <td>{{ task.type }}</td>
+          <td>{{ task.assignee or "-" }}</td>
+          <td>{{ task.due_date or "-" }}</td>
+          <td>
+            <form method="post" action="/tasks/{{ task.id }}/status">
+              <select name="status" onchange="this.form.submit()">
+                {% for status in ["Бэклог", "В работе", "Тестируется", "Готово", "Заблокировано"] %}
+                  <option value="{{ status }}" {% if task.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">Задач пока нет.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

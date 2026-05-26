@@ -1,0 +1,19 @@
+<form class="task-form" method="post" action="/projects/{{ project.id }}/tasks">
+  <input name="title" placeholder="Новая задача" required>
+  <select name="type">
+    <option value="работа">работа</option>
+    <option value="вопрос">вопрос</option>
+    <option value="риск">риск</option>
+    <option value="замечание">замечание</option>
+    <option value="документ">документ</option>
+  </select>
+  <select name="priority">
+    <option>Средний</option>
+    <option>Высокий</option>
+    <option>Низкий</option>
+  </select>
+  <input name="assignee" placeholder="Исполнитель">
+  <input name="due_date" type="date">
+  <textarea name="description" placeholder="Описание"></textarea>
+  <button type="submit">Добавить</button>
+</form>
