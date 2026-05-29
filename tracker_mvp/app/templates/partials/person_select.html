@@ -1,0 +1,11 @@
+<select name="{{ field_name }}">
+  <option value="">Не выбран</option>
+  {% if current_value and current_value not in company_people_names %}
+    <option value="{{ current_value }}" selected>{{ current_value }}</option>
+  {% endif %}
+  {% for person in company_people %}
+    <option value="{{ person.full_name }}" {% if current_value == person.full_name %}selected{% endif %}>
+      {{ person.full_name }}{% if person.role %} / {{ person.role }}{% endif %}
+    </option>
+  {% endfor %}
+</select>

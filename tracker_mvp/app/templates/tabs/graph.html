@@ -1,0 +1,60 @@
+<div class="sheet-title">
+  <h2>Связи</h2>
+  <p>Карта operational-связей проекта: задачи, документы, закупки, риски и P3-действия.</p>
+</div>
+
+<form class="filter-bar" method="get" action="/projects/{{ project.id }}/graph">
+  <label>
+    Сущность
+    <select name="link_entity">
+      <option value="">Все сущности</option>
+      {% for target in link_targets %}
+        {% set target_key = target["type"] ~ ":" ~ target["id"] %}
+        <option value="{{ target_key }}" {% if link_entity == target_key %}selected{% endif %}>{{ target["label"] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    Тип связи
+    <select name="link_relation">
+      <option value="">Все типы</option>
+      {% for relation in link_relations %}
+        <option value="{{ relation }}" {% if link_relation == relation %}selected{% endif %}>{{ relation }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Применить</button>
+  <a class="secondary-button" href="/projects/{{ project.id }}/graph">Сбросить</a>
+</form>
+
+<section class="graph-layout">
+  <div class="graph-nodes">
+    <h3>Сущности</h3>
+    {% for node in graph_nodes %}
+      <article class="graph-node graph-node-{{ node["type"] }} {% if node["connected"] %}connected{% endif %}">
+        <strong>{{ node["label"] }}</strong>
+        <small>{{ node["type"] }}</small>
+      </article>
+    {% else %}
+      <p class="muted">Связанных сущностей пока нет. Создайте связь из задачи, документа, закупки, риска или P3-действия.</p>
+    {% endfor %}
+  </div>
+
+  <div class="graph-edges">
+    <h3>Связи</h3>
+    {% for edge in graph_edges %}
+      <article class="graph-edge">
+        <strong>{{ edge.source_label }}</strong>
+        <span>{{ edge.relation_type }}</span>
+        <strong>{{ edge.target_label }}</strong>
+        {% if edge.note %}<small>{{ edge.note }}</small>{% endif %}
+        <form method="post" action="/links/{{ edge.id }}/delete">
+          <input type="hidden" name="return_tab" value="graph">
+          <button class="danger-button" type="submit">Удалить связь</button>
+        </form>
+      </article>
+    {% else %}
+      <p class="muted">По текущему фильтру связей нет.</p>
+    {% endfor %}
+  </div>
+</section>

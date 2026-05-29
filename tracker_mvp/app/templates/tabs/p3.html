@@ -1,0 +1,183 @@
+<div class="sheet-title">
+  <h2>P3.express</h2>
+  <p>Управленческий чек-лист проекта, текущая фаза и настраиваемые циклы.</p>
+</div>
+
+<section class="summary-strip">
+  <article>
+    <strong>{{ p3_summary.current_phase }}</strong>
+    <span>текущая фаза</span>
+  </article>
+  <article>
+    <strong>{{ p3_summary.readiness_percent }}%</strong>
+    <span>готовность P3</span>
+  </article>
+  <article>
+    <strong>{{ p3_summary.cycle_title or "Не задан" }}</strong>
+    <span>текущий цикл</span>
+  </article>
+  <article>
+    <strong>{{ p3_summary.cycle_dates or "-" }}</strong>
+    <span>сроки цикла</span>
+  </article>
+</section>
+
+<details class="action-panel">
+  <summary>Настроить цикл</summary>
+  <form class="project-form" method="post" action="/projects/{{ project.id }}/p3/cycles">
+    <label>
+      Номер
+      <input name="cycle_number" placeholder="1">
+    </label>
+    <label>
+      Название цикла
+      <input name="title" value="Цикл проекта" required>
+    </label>
+    <label>
+      Статус
+      <select name="status">
+        {% for status in ["Планируется", "Активен", "Завершен"] %}
+          <option value="{{ status }}">{{ status }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Дата начала
+      <input name="start_date" type="date">
+    </label>
+    <label>
+      Длительность, дней
+      <input name="duration_days" type="number" min="1" placeholder="14">
+    </label>
+    <label>
+      Дата окончания
+      <input name="end_date" type="date">
+    </label>
+    <label class="wide">
+      Заметки по циклу
+      <textarea name="notes"></textarea>
+    </label>
+    <button type="submit">Сохранить цикл</button>
+  </form>
+</details>
+
+<section class="p3-cycles">
+  {% for cycle in p3_cycles %}
+    <details class="p3-cycle-card" {% if cycle.status != "Завершен" %}open{% endif %}>
+      <summary>
+        <strong>{{ cycle.cycle_number }} {{ cycle.title }}</strong>
+        <span class="{% if cycle.is_overdue %}overdue-label{% endif %}">{{ cycle.status }}{% if cycle.is_overdue %} / просрочен{% endif %}</span>
+        <small>{{ cycle.start_date or "-" }} - {{ cycle.end_date or "-" }}{% if cycle.duration_days %} / {{ cycle.duration_days }} дн.{% endif %}</small>
+      </summary>
+      <form class="project-form compact-form" method="post" action="/projects/{{ project.id }}/p3/cycles">
+        <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
+        <label>Номер<input name="cycle_number" value="{{ cycle.cycle_number }}"></label>
+        <label>Название<input name="title" value="{{ cycle.title }}" required></label>
+        <label>
+          Статус
+          <select name="status">
+            {% for status in ["Планируется", "Активен", "Завершен"] %}
+              <option value="{{ status }}" {% if cycle.status == status %}selected{% endif %}>{{ status }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Начало<input name="start_date" type="date" value="{{ cycle.start_date }}"></label>
+        <label>Длительность<input name="duration_days" type="number" min="1" value="{{ cycle.duration_days }}"></label>
+        <label>Окончание<input name="end_date" type="date" value="{{ cycle.end_date }}"></label>
+        <label class="wide">Заметки<textarea name="notes">{{ cycle.notes }}</textarea></label>
+        <button type="submit">Обновить цикл</button>
+      </form>
+    </details>
+  {% else %}
+    <p class="muted">Циклы пока не настроены.</p>
+  {% endfor %}
+</section>
+
+<section class="p3-board">
+  {% for group in p3_groups %}
+    <details class="p3-group p3-group-{{ group.code|lower }}" {% if not group.is_done %}open{% endif %}>
+      <summary class="p3-group-head">
+        <span>{{ group.code }}</span>
+        <h3>{{ group.title }}</h3>
+        {% if group.is_cycle %}<small>цикл</small>{% endif %}
+        <small>{{ group.done_count }} / {{ group.total_count }}</small>
+      </summary>
+
+      <div class="p3-activities">
+        {% for activity in group.activities %}
+          <details class="p3-card" {% if activity.status != "Выполнено" %}open{% endif %}>
+            <summary>
+              <span class="p3-code">{{ activity.code }}</span>
+              <span class="p3-title">{{ activity.title }}</span>
+              <span class="p3-status {% if activity.is_overdue %}overdue-label{% endif %}">{{ activity.status }}{% if activity.is_overdue %} / просрочено{% endif %}</span>
+            </summary>
+
+            <div class="p3-card-body">
+              <p>{{ activity.purpose }}</p>
+              <dl>
+                <dt>Связь с трекером</dt>
+                <dd>{{ activity.project_links }}</dd>
+              </dl>
+              {% set entity_type = "p3" %}
+              {% set entity_id = activity.id %}
+              {% set return_tab = "p3" %}
+              {% include "partials/entity_links.html" %}
+
+              <form class="p3-form" method="post" action="/p3/{{ activity.id }}">
+                <label>
+                  Статус
+                  <select name="status">
+                    {% for status in ["Не начато", "Актуально", "В работе", "Выполнено", "Пропущено"] %}
+                      <option value="{{ status }}" {% if activity.status == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <label>
+                  Ответственный
+                  {% set field_name = "owner" %}
+                  {% set current_value = activity.owner %}
+                  {% include "partials/person_select.html" %}
+                </label>
+                <label>
+                  Выполнено / проверено
+                  <input name="last_done_at" type="date" value="{{ activity.last_done_at }}">
+                </label>
+                <label>
+                  Следующая проверка
+                  <input name="next_due_at" type="date" value="{{ activity.next_due_at }}">
+                </label>
+                <label class="wide">
+                  Заметки
+                  <textarea name="notes">{{ activity.notes }}</textarea>
+                </label>
+                <button type="submit">Сохранить действие</button>
+              </form>
+            </div>
+          </details>
+        {% endfor %}
+      </div>
+    </details>
+  {% endfor %}
+</section>
+
+<section class="p3-history">
+  <h3>История циклов</h3>
+  <div class="events compact-events">
+    {% for event in p3_cycle_events %}
+      <article>
+        <time>{{ event.created_at.strftime("%d.%m.%Y %H:%M") }}</time>
+        <strong>{{ event.event_type }}</strong>
+        <p>{{ event.description }}</p>
+        {% if event.before_state or event.after_state %}
+          <details class="event-state">
+            <summary>Изменения</summary>
+            {% if event.before_state %}<pre>До: {{ event.before_state }}</pre>{% endif %}
+            {% if event.after_state %}<pre>После: {{ event.after_state }}</pre>{% endif %}
+          </details>
+        {% endif %}
+      </article>
+    {% else %}
+      <p class="muted">История циклов пока пустая.</p>
+    {% endfor %}
+  </div>
+</section>

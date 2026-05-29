@@ -24,5 +24,70 @@
       <button type="submit">Сохранить</button>
     </form>
   </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Люди компании</h2>
+    </div>
+    <form class="project-form compact" method="post" action="/settings/people">
+      <label>
+        ФИО
+        <input name="full_name" required>
+      </label>
+      <label>
+        Роль
+        <input name="role" placeholder="РП, проектировщик, программист">
+      </label>
+      <label>
+        Отдел
+        <input name="department">
+      </label>
+      <label>
+        Телефон
+        <input name="phone">
+      </label>
+      <label>
+        Email
+        <input name="email" type="email">
+      </label>
+      <button type="submit">Добавить человека</button>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ФИО</th>
+            <th>Роль</th>
+            <th>Отдел</th>
+            <th>Контакты</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for person in people if person.is_active == "1" %}
+            <tr>
+              <td><strong>{{ person.full_name }}</strong></td>
+              <td>{{ person.role }}</td>
+              <td>{{ person.department }}</td>
+              <td>
+                {% if person.phone %}<small>{{ person.phone }}</small>{% endif %}
+                {% if person.email %}<small>{{ person.email }}</small>{% endif %}
+              </td>
+              <td>
+                <form method="post" action="/settings/people/{{ person.id }}/delete">
+                  <button class="danger-button" type="submit">Убрать</button>
+                </form>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5" class="muted">Справочник людей пока пуст. Добавьте сотрудников, чтобы выбирать ответственных в проектах.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
 </section>
 {% endblock %}

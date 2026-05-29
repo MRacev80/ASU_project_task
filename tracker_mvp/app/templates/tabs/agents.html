@@ -1,0 +1,98 @@
+<div class="sheet-title">
+  <h2>Агенты</h2>
+  <p>Очередь предложений: агент предлагает, человек принимает или отклоняет, система применяет только принятое.</p>
+</div>
+
+<details class="action-panel">
+  <summary>Добавить тестовое предложение</summary>
+  <form class="project-form" method="post" action="/projects/{{ project.id }}/agent-proposals">
+    <label>
+      Агент
+      <input name="agent_name" value="local-agent">
+    </label>
+    <label>
+      Тип предложения
+      <select name="proposal_type">
+        <option value="create_task">Создать задачу</option>
+        <option value="update_status">Изменить статус</option>
+      </select>
+    </label>
+    <label>
+      Целевой объект
+      <select name="target_ref">
+        <option value="">Не нужен</option>
+        {% for target in link_targets %}
+          <option value="{{ target["type"] }}:{{ target["id"] }}">{{ target["label"] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Заголовок
+      <input name="title" required>
+    </label>
+    <label>
+      Предлагаемый статус
+      <input name="suggested_status" placeholder="Например: В работе">
+    </label>
+    <label>
+      Файл-источник
+      <input name="source_file" placeholder="agents/outbox/result.json">
+    </label>
+    <label class="wide">
+      Описание
+      <textarea name="description"></textarea>
+    </label>
+    <button type="submit">Создать предложение</button>
+  </form>
+</details>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Статус</th>
+        <th>Предложение</th>
+        <th>Тип</th>
+        <th>Цель</th>
+        <th>Агент</th>
+        <th>Решение</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for proposal in agent_proposals %}
+        <tr>
+          <td><span class="badge">{{ proposal.status }}</span></td>
+          <td>
+            <strong>{{ proposal.title }}</strong>
+            {% if proposal.description %}<small>{{ proposal.description }}</small>{% endif %}
+            {% if proposal.decision_comment %}<small>Решение: {{ proposal.decision_comment }}</small>{% endif %}
+          </td>
+          <td>{{ proposal.proposal_type }}</td>
+          <td>
+            {% if proposal.target_type %}
+              {{ entity_labels.get(proposal.target_type ~ ":" ~ proposal.target_id, proposal.target_type ~ ":" ~ proposal.target_id) }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{{ proposal.agent_name }}{% if proposal.source_file %}<small>{{ proposal.source_file }}</small>{% endif %}</td>
+          <td>
+            {% if proposal.status == "На рассмотрении" %}
+              <form class="proposal-decision" method="post" action="/agent-proposals/{{ proposal.id }}/decision">
+                <input name="decision_comment" placeholder="Комментарий решения">
+                <button type="submit" name="decision" value="accept">Принять</button>
+                <button class="danger-button" type="submit" name="decision" value="reject">Отклонить</button>
+              </form>
+            {% else %}
+              <small>Решение принято</small>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="6" class="muted">Предложений агента пока нет.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

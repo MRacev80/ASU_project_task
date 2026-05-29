@@ -1,20 +1,20 @@
 <div class="sheet-title">
-  <h2>Главная</h2>
-  <p>Паспорт проекта, состояние, сроки и текущий фокус.</p>
+  <h2>Паспорт проекта</h2>
+  <p>Состояние проекта, сроки, команда и текущая фаза по P3.express.</p>
 </div>
 
-<section class="main-dashboard">
+<section class="passport-grid">
   <div class="info-card">
-    <h3>Идентификация</h3>
+    <h3>Идентификация проекта</h3>
     <dl>
+      <dt>Код проекта</dt>
+      <dd>{{ project.project_code or "Не указан" }}</dd>
       <dt>Заказчик</dt>
       <dd>{{ project.customer or "Не указан" }}</dd>
-      <dt>Объект</dt>
-      <dd>{{ project.automation_object or "Не указан" }}</dd>
-      <dt>Руководитель</dt>
-      <dd>{{ project.project_manager or "Не указан" }}</dd>
-      <dt>Стадия</dt>
-      <dd>{{ project.stage or "Не указана" }}</dd>
+      <dt>Объект / название</dt>
+      <dd>{{ project.automation_object or project.name }}</dd>
+      <dt>Номер договора</dt>
+      <dd>{{ project.contract_number or "Не указан" }}</dd>
     </dl>
   </div>
 
@@ -23,62 +23,136 @@
     <dl>
       <dt>Статус</dt>
       <dd><span class="status">{{ project.status }}</span></dd>
-      <dt>Всего задач</dt>
-      <dd>{{ tasks|length }}</dd>
-      <dt>В работе</dt>
-      <dd>{{ tasks|selectattr("status", "equalto", "В работе")|list|length }}</dd>
-      <dt>Заблокировано</dt>
-      <dd>{{ tasks|selectattr("status", "equalto", "Заблокировано")|list|length }}</dd>
+      <dt>Текущая фаза</dt>
+      <dd>{{ p3_summary.current_phase }}</dd>
+      <dt>Текущий цикл</dt>
+      <dd>{{ p3_summary.cycle_title or "Не указан" }}</dd>
+      <dt>Сроки цикла</dt>
+      <dd>{{ p3_summary.cycle_dates or "Не указаны" }}</dd>
+      <dt>Готовность P3</dt>
+      <dd>{{ p3_summary.readiness_percent }}%</dd>
     </dl>
   </div>
 
-  <div class="info-card wide">
-    <h3>Хранилище проекта</h3>
+  <div class="info-card">
+    <h3>Сроки</h3>
+    <dl>
+      <dt>Начало план</dt>
+      <dd>{{ project.start_plan or "Не указано" }}</dd>
+      <dt>Окончание план</dt>
+      <dd>{{ project.finish_plan or "Не указано" }}</dd>
+      <dt>Начало факт</dt>
+      <dd>{{ project.start_fact or "Не указано" }}</dd>
+      <dt>Окончание факт</dt>
+      <dd>{{ project.finish_fact or "Не указано" }}</dd>
+    </dl>
+  </div>
+
+  <div class="info-card">
+    <h3>Финансы</h3>
+    <dl>
+      <dt>Стоимость договора</dt>
+      <dd>{{ project.contract_amount or "Не указана" }}</dd>
+      <dt>Бюджет план</dt>
+      <dd>{{ project.budget_plan or "0" }}</dd>
+      <dt>Бюджет факт</dt>
+      <dd>{{ project.budget_actual or "0" }}</dd>
+      <dt>Отклонение</dt>
+      <dd>Будет рассчитано</dd>
+    </dl>
+  </div>
+
+  <div class="info-card">
+    <h3>Команда</h3>
+    <dl>
+      <dt>Руководитель</dt>
+      <dd>{{ project.project_manager or "Не указан" }}</dd>
+      <dt>Проектировщик</dt>
+      <dd>{{ project.designer or "Не указан" }}</dd>
+      <dt>Программист</dt>
+      <dd>{{ project.programmer or "Не указан" }}</dd>
+      <dt>Мастер КИП</dt>
+      <dd>{{ project.kip_master or "Не указан" }}</dd>
+    </dl>
+  </div>
+
+  <div class="info-card">
+    <h3>Рабочая папка</h3>
     <dl>
       <dt>Папка проекта</dt>
       <dd>{{ active_workspace or "Не выбрана" }}</dd>
       <dt>Документы</dt>
-      <dd>{{ project.documents_path or "Не указано" }}</dd>
-      <dt>Файлов в карточке</dt>
+      <dd>{{ documents_dir or "Не выбраны" }}</dd>
+      <dt>Документов</dt>
       <dd>{{ documents|length }}</dd>
-      <dt>Событий в журнале</dt>
+      <dt>Событий</dt>
       <dd>{{ events|length }}</dd>
     </dl>
   </div>
+
+  <div class="info-card wide">
+    <h3>Фокус</h3>
+    <p>{{ project.description or "Текущий приоритет / примечание не заполнены." }}</p>
+  </div>
 </section>
 
-<form class="project-form" method="post" action="/projects/{{ project.id }}">
-  <label>
-    Название
-    <input name="name" value="{{ project.name }}" required>
-  </label>
-  <label>
-    Заказчик
-    <input name="customer" value="{{ project.customer }}">
-  </label>
-  <label>
-    Объект автоматизации
-    <input name="automation_object" value="{{ project.automation_object }}">
-  </label>
-  <label>
-    Стадия
-    <input name="stage" value="{{ project.stage }}">
-  </label>
-  <label>
-    Статус
-    <input name="status" value="{{ project.status }}">
-  </label>
-  <label>
-    Руководитель проекта
-    <input name="project_manager" value="{{ project.project_manager }}">
-  </label>
-  <label class="wide">
-    Папка документов
-    <input name="documents_path" value="{{ project.documents_path }}">
-  </label>
-  <label class="wide">
-    Описание / текущий приоритет
-    <textarea name="description">{{ project.description }}</textarea>
-  </label>
-  <button type="submit">Сохранить карточку</button>
-</form>
+<details class="action-panel">
+  <summary>Редактировать паспорт</summary>
+  <form class="project-form passport-form" method="post" action="/projects/{{ project.id }}">
+    <label>Код проекта<input name="project_code" value="{{ project.project_code }}"></label>
+    <label>Название проекта<input name="name" value="{{ project.name }}" required></label>
+    <label>Заказчик<input name="customer" value="{{ project.customer }}"></label>
+    <label>Объект / название проекта<input name="automation_object" value="{{ project.automation_object }}"></label>
+    <label>Номер договора<input name="contract_number" value="{{ project.contract_number }}"></label>
+    <label>Статус<input name="status" value="{{ project.status }}"></label>
+    <label>Текущая фаза вручную<input name="stage" value="{{ project.stage }}" placeholder="Обычно берется из P3.express"></label>
+    <label>Текущий КТ<input name="current_milestone" value="{{ project.current_milestone }}"></label>
+    <label>% готовности вручную<input name="readiness_percent" value="{{ project.readiness_percent }}" placeholder="P3 готовность считается отдельно"></label>
+    <label>Дата начала план<input name="start_plan" value="{{ project.start_plan }}"></label>
+    <label>Дата окончания план<input name="finish_plan" value="{{ project.finish_plan }}"></label>
+    <label>Дата начала факт<input name="start_fact" value="{{ project.start_fact }}"></label>
+    <label>Дата окончания факт<input name="finish_fact" value="{{ project.finish_fact }}"></label>
+    <label>Стоимость договора, руб.<input name="contract_amount" value="{{ project.contract_amount }}"></label>
+    <label>Бюджет план, руб.<input name="budget_plan" value="{{ project.budget_plan }}"></label>
+    <label>Бюджет факт, руб.<input name="budget_actual" value="{{ project.budget_actual }}"></label>
+    <label>
+      Руководитель проектов
+      {% set field_name = "project_manager" %}
+      {% set current_value = project.project_manager %}
+      {% include "partials/person_select.html" %}
+    </label>
+    <label>
+      Проектировщик
+      {% set field_name = "designer" %}
+      {% set current_value = project.designer %}
+      {% include "partials/person_select.html" %}
+    </label>
+    <label>
+      Программист
+      {% set field_name = "programmer" %}
+      {% set current_value = project.programmer %}
+      {% include "partials/person_select.html" %}
+    </label>
+    <label>
+      Мастер КИП
+      {% set field_name = "kip_master" %}
+      {% set current_value = project.kip_master %}
+      {% include "partials/person_select.html" %}
+    </label>
+    <label class="wide">Текущий приоритет / примечание<textarea name="description">{{ project.description }}</textarea></label>
+    <button type="submit">Сохранить паспорт</button>
+  </form>
+</details>
+
+<details class="action-panel danger-action">
+  <summary>Удаление проекта</summary>
+  <section class="danger-zone">
+    <div>
+      <h3>Удаление проекта</h3>
+      <p>Удаляет карточку проекта, задачи, документы и журнал из текущей базы. Файлы в папке проекта не удаляются.</p>
+    </div>
+    <form method="post" action="/projects/{{ project.id }}/delete" onsubmit="return confirm('Удалить проект из базы? Файлы на диске останутся.');">
+      <button class="danger-button" type="submit">Удалить проект</button>
+    </form>
+  </section>
+</details>

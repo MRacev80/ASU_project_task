@@ -12,10 +12,16 @@
       <summary>+ Создать проект</summary>
       <form class="stack" method="post" action="/projects">
         <input name="name" placeholder="Название проекта" required>
+        <input name="project_code" placeholder="Код проекта">
         <input name="customer" placeholder="Заказчик">
         <input name="automation_object" placeholder="Объект автоматизации">
-        <input name="project_manager" placeholder="Руководитель проекта">
-        <input name="documents_path" placeholder="Папка документов">
+        <input name="contract_number" placeholder="Номер договора">
+        <select name="project_manager">
+          <option value="">Руководитель проекта</option>
+          {% for person in company_people %}
+            <option value="{{ person.full_name }}">{{ person.full_name }}{% if person.role %} / {{ person.role }}{% endif %}</option>
+          {% endfor %}
+        </select>
         <button type="submit">Создать проект</button>
       </form>
     </details>
@@ -37,9 +43,12 @@
     <section class="project-head">
       <div>
         <h1>{{ project.name }}</h1>
-        <p>{{ project.customer or "Заказчик не указан" }} · {{ project.automation_object or "Объект не указан" }}</p>
+        <p>{{ project.customer or "Заказчик не указан" }} / {{ project.automation_object or "Объект не указан" }}</p>
       </div>
-      <span class="status">{{ project.status }}</span>
+      <div class="project-actions">
+        <span class="status">{{ project.status }}</span>
+        <a class="secondary-button" href="/workspace">Папка проекта</a>
+      </div>
     </section>
 
     <section class="stats">
@@ -51,12 +60,15 @@
 
     <nav class="sheet-tabs" aria-label="Листы карточки проекта">
       <a class="{% if active_tab == 'main' %}active{% endif %}" href="/projects/{{ project.id }}/main">Главная</a>
+      <a class="{% if active_tab == 'phases' %}active{% endif %}" href="/projects/{{ project.id }}/phases">Фазы</a>
+      <a class="{% if active_tab == 'sites' %}active{% endif %}" href="/projects/{{ project.id }}/sites">Площадки</a>
       <a class="{% if active_tab == 'tasks' %}active{% endif %}" href="/projects/{{ project.id }}/tasks">Задачи</a>
       <a class="{% if active_tab == 'budget' %}active{% endif %}" href="/projects/{{ project.id }}/budget">Бюджет</a>
       <a class="{% if active_tab == 'procurement' %}active{% endif %}" href="/projects/{{ project.id }}/procurement">Закупки</a>
       <a class="{% if active_tab == 'documents' %}active{% endif %}" href="/projects/{{ project.id }}/documents">Документы</a>
       <a class="{% if active_tab == 'risks' %}active{% endif %}" href="/projects/{{ project.id }}/risks">Риски</a>
       <a class="{% if active_tab == 'p3' %}active{% endif %}" href="/projects/{{ project.id }}/p3">P3.express</a>
+      <a class="{% if active_tab == 'graph' %}active{% endif %}" href="/projects/{{ project.id }}/graph">Связи</a>
       <a class="{% if active_tab == 'events' %}active{% endif %}" href="/projects/{{ project.id }}/events">Журнал</a>
       <a class="{% if active_tab == 'agents' %}active{% endif %}" href="/projects/{{ project.id }}/agents">Агенты</a>
     </nav>
@@ -64,6 +76,10 @@
     <section class="sheet">
       {% if active_tab == "main" %}
         {% include "tabs/main.html" %}
+      {% elif active_tab == "phases" %}
+        {% include "tabs/phases.html" %}
+      {% elif active_tab == "sites" %}
+        {% include "tabs/sites.html" %}
       {% elif active_tab == "tasks" %}
         {% include "tabs/tasks.html" %}
       {% elif active_tab == "documents" %}
@@ -71,21 +87,23 @@
       {% elif active_tab == "events" %}
         {% include "tabs/events.html" %}
       {% elif active_tab == "budget" %}
-        {% include "tabs/placeholder.html" with context %}
+        {% include "tabs/budget.html" %}
       {% elif active_tab == "procurement" %}
-        {% include "tabs/placeholder.html" with context %}
+        {% include "tabs/procurement.html" %}
       {% elif active_tab == "risks" %}
-        {% include "tabs/placeholder.html" with context %}
+        {% include "tabs/risks.html" %}
       {% elif active_tab == "p3" %}
-        {% include "tabs/placeholder.html" with context %}
+        {% include "tabs/p3.html" %}
+      {% elif active_tab == "graph" %}
+        {% include "tabs/graph.html" %}
       {% elif active_tab == "agents" %}
-        {% include "tabs/placeholder.html" with context %}
+        {% include "tabs/agents.html" %}
       {% endif %}
     </section>
   {% else %}
     <section class="empty">
       <h1>Создайте первый проект</h1>
-      <p>После создания проекта здесь появятся задачи, документы и журнал действий.</p>
+      <p>После создания проекта здесь появятся паспорт, задачи, документы и журнал действий.</p>
     </section>
   {% endif %}
 </section>

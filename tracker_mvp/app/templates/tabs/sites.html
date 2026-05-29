@@ -1,0 +1,517 @@
+{# Вкладка Площадки.
+   Каждая площадка — одна строка в таблице. Клик «↓ детали» раскрывает
+   встроенный блок со спецификациями и позициями прямо под строкой.
+   Формы добавления/редактирования — компактные, в одну строку. #}
+
+<div class="sheet-title">
+  <div>
+    <h2>Площадки и спецификации</h2>
+    <p>Состояние работ и оборудования по каждой площадке проекта.</p>
+  </div>
+</div>
+
+{# ── Таблица площадок ─────────────────────────────────────────────────────── #}
+{% if sites %}
+<table class="data-table sites-table">
+  <thead>
+    <tr>
+      <th>Площадка</th>
+      <th>Статус</th>
+      <th>Работы</th>
+      <th>Оборудование</th>
+      <th>Ответственный</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for site in sites %}
+    {% set site_specs = specs_by_site.get(site.id, []) %}
+    {% set work_spec  = site_specs | selectattr("spec_type", "equalto", "Работы")       | list | first %}
+    {% set equip_spec = site_specs | selectattr("spec_type", "equalto", "Оборудование") | list | first %}
+
+    {# ── Основная строка площадки ─────────────────────────────────────────── #}
+    <tr class="site-main-row {% if site.status == 'Завершена' %}site-done{% elif site.status == 'Приостановлена' %}site-paused{% endif %}"
+        id="site-row-{{ site.id }}"
+        data-site="{{ site.id }}">
+      <td>
+        <strong>{{ site.name }}</strong>
+        {% if site.comment %}<br><small class="muted">{{ site.comment | truncate(50) }}</small>{% endif %}
+      </td>
+      <td>
+        {% if site.status == "Завершена" %}<span class="badge badge-green">{{ site.status }}</span>
+        {% elif site.status == "В работе" %}<span class="badge badge-blue">{{ site.status }}</span>
+        {% elif site.status == "Приостановлена" %}<span class="badge badge-yellow">{{ site.status }}</span>
+        {% else %}<span class="badge">{{ site.status }}</span>{% endif %}
+      </td>
+      <td>
+        {% if work_spec %}
+          <span class="spec-status spec-status-{{ work_spec.status | lower | replace(' ', '-') }}">{{ work_spec.status }}</span>
+          {% if work_spec.progress_percent and work_spec.progress_percent != "0" %}
+            / <strong>{{ work_spec.progress_percent }}%</strong>
+          {% endif %}
+        {% else %}<span class="muted">—</span>{% endif %}
+      </td>
+      <td>
+        {% if equip_spec %}
+          <span class="spec-status spec-status-{{ equip_spec.status | lower | replace(' ', '-') }}">{{ equip_spec.status }}</span>
+          {% if equip_spec.progress_percent and equip_spec.progress_percent != "0" %}
+            / <strong>{{ equip_spec.progress_percent }}%</strong>
+          {% endif %}
+        {% else %}<span class="muted">—</span>{% endif %}
+      </td>
+      <td>{{ site.owner or "—" }}</td>
+      <td class="row-actions">
+        <button class="secondary-button small-btn site-toggle-btn" type="button"
+                onclick="toggleSite('{{ site.id }}', this)">↓ детали</button>
+      </td>
+    </tr>
+
+    {# ── Раскрывающаяся панель площадки ──────────────────────────────────── #}
+    <tr class="site-detail-row" id="site-detail-{{ site.id }}" style="display:none">
+      <td colspan="6" style="padding:0">
+        <div class="site-detail-panel">
+
+          {# Спецификации #}
+          {% if site_specs %}
+            {% for spec in site_specs %}
+            {% set spec_items = items_by_spec.get(spec.id, []) %}
+            <div class="spec-row">
+              {# Заголовок спецификации — всё в одну строку #}
+              <div class="spec-row-header">
+                <span class="spec-type-pill spec-type-{{ spec.spec_type | lower | replace(' ', '-') }}">{{ spec.spec_type }}</span>
+                <span class="spec-row-title">{{ spec.title }}</span>
+                <span class="spec-status spec-status-{{ spec.status | lower | replace(' ', '-') }}">{{ spec.status }}</span>
+                {% if spec.progress_percent and spec.progress_percent != "0" %}
+                  <span class="progress-inline">
+                    <span class="progress-bar-mini" style="width:{{ spec.progress_percent }}%"></span>
+                    {{ spec.progress_percent }}%
+                  </span>
+                {% endif %}
+                {% if spec.total_amount %}<span class="spec-amount">{{ spec.total_amount }}</span>{% endif %}
+                {% if spec.owner %}<span class="muted" style="font-size:12px">{{ spec.owner }}</span>{% endif %}
+                <span style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+                  <button type="button" class="small-btn secondary-button"
+                          onclick="toggleItems('{{ spec.id }}', this)">
+                    позиции{% if spec_items %} <span class="item-count-badge">{{ spec_items | length }}</span>{% endif %}
+                  </button>
+                  <details class="inline-action">
+                    <summary class="secondary-button small-btn">Изм.</summary>
+                    <div class="inline-action-form">
+                      <form class="project-form" method="post" action="/specifications/{{ spec.id }}/update">
+                        <label>Название<input name="title" value="{{ spec.title }}" required></label>
+                        <label>Тип
+                          <select name="spec_type">
+                            {% for t in ["Работы","Оборудование","Материалы","ПО","Документация","Прочее"] %}
+                              <option value="{{ t }}" {% if t == spec.spec_type %}selected{% endif %}>{{ t }}</option>
+                            {% endfor %}
+                          </select>
+                        </label>
+                        <label>Статус
+                          <select name="status">
+                            {% for s in ["Черновик","Согласовано","Подписано"] %}
+                              <option value="{{ s }}" {% if s == spec.status %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                          </select>
+                        </label>
+                        <label>Готовность, %<input name="progress_percent" type="number" min="0" max="100" value="{{ spec.progress_percent or 0 }}"></label>
+                        <label>Ответственный
+                          {% set field_name = "owner" %}{% set current_value = spec.owner %}
+                          {% include "partials/person_select.html" %}
+                        </label>
+                        <label>Сумма<input name="total_amount" value="{{ spec.total_amount }}"></label>
+                        <label class="wide">Комментарий<input name="comment" value="{{ spec.comment }}"></label>
+                        <button type="submit">Сохранить</button>
+                      </form>
+                      <form method="post" action="/specifications/{{ spec.id }}/delete" style="margin-top:6px">
+                        <button type="submit" class="danger-button" onclick="return confirm('Удалить спецификацию?')">Удалить</button>
+                      </form>
+                    </div>
+                  </details>
+                </span>
+              </div>
+
+              {# Таблица позиций — скрыта по умолчанию #}
+              <div class="spec-items-panel" id="items-{{ spec.id }}" style="display:none">
+                {% if spec_items %}
+                <table class="data-table spec-items-table">
+                  <thead>
+                    <tr>
+                      <th>Наименование</th><th>Кол-во</th><th>Ед.</th>
+                      <th>Производитель / Каталог</th><th>Срок поставки</th>
+                      <th>Цена</th><th>Сумма</th><th>Статус</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in spec_items %}
+                    <tr>
+                      <td>{{ item.name }}</td>
+                      <td>{{ item.quantity or "—" }}</td>
+                      <td>{{ item.unit or "—" }}</td>
+                      <td>{{ item.manufacturer or "—" }}{% if item.catalog_number %}<br><small class="muted">{{ item.catalog_number }}</small>{% endif %}</td>
+                      <td>{{ item.delivery_date or "—" }}</td>
+                      <td>{{ item.unit_price or "—" }}</td>
+                      <td>{{ item.total_amount or "—" }}</td>
+                      <td>
+                        {% if item.status in ["Готово","На складе"] %}<span class="badge badge-green">{{ item.status }}</span>
+                        {% elif item.status == "Поставляется" %}<span class="badge badge-blue">{{ item.status }}</span>
+                        {% elif item.status == "Оформлено" %}<span class="badge badge-yellow">{{ item.status }}</span>
+                        {% else %}<span class="badge">{{ item.status }}</span>{% endif %}
+                      </td>
+                      <td class="row-actions">
+                        <details class="inline-action">
+                          <summary class="secondary-button small-btn">Изм.</summary>
+                          <div class="inline-action-form">
+                            <form class="project-form" method="post" action="/items/{{ item.id }}/update">
+                              <label>Наименование<input name="name" value="{{ item.name }}" required></label>
+                              <label>Кол-во<input name="quantity" value="{{ item.quantity }}"></label>
+                              <label>Ед. изм.<input name="unit" value="{{ item.unit }}"></label>
+                              <label>Производитель<input name="manufacturer" value="{{ item.manufacturer }}"></label>
+                              <label>Каталожный номер<input name="catalog_number" value="{{ item.catalog_number }}"></label>
+                              <label>Срок поставки<input name="delivery_date" value="{{ item.delivery_date }}" placeholder="Q3 2026"></label>
+                              <label>Цена<input name="unit_price" value="{{ item.unit_price }}"></label>
+                              <label>Сумма<input name="total_amount" value="{{ item.total_amount }}"></label>
+                              <label>Статус
+                                <select name="status">
+                                  {% for s in ["В проработке","Оформлено","Поставляется","На складе","Готово"] %}
+                                    <option value="{{ s }}" {% if s == item.status %}selected{% endif %}>{{ s }}</option>
+                                  {% endfor %}
+                                </select>
+                              </label>
+                              <label class="wide">Комментарий<input name="comment" value="{{ item.comment }}"></label>
+                              <button type="submit">Сохранить</button>
+                            </form>
+                            <form method="post" action="/items/{{ item.id }}/delete" style="margin-top:6px">
+                              <button type="submit" class="danger-button" onclick="return confirm('Удалить позицию?')">Удалить</button>
+                            </form>
+                          </div>
+                        </details>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% endif %}
+
+                {# Форма добавления позиции — компактная однострочная #}
+                <form class="inline-add-form" method="post" action="/specifications/{{ spec.id }}/items">
+                  <input name="name" placeholder="Наименование *" required>
+                  <input name="quantity" placeholder="Кол-во" style="width:70px">
+                  <input name="unit" placeholder="Ед." style="width:50px">
+                  <input name="manufacturer" placeholder="Производитель">
+                  <input name="catalog_number" placeholder="Каталог №">
+                  <input name="delivery_date" placeholder="Срок" style="width:80px">
+                  <input name="unit_price" placeholder="Цена" style="width:90px">
+                  <input name="total_amount" placeholder="Сумма" style="width:90px">
+                  <select name="status" style="width:130px">
+                    {% for s in ["В проработке","Оформлено","Поставляется","На складе","Готово"] %}
+                      <option value="{{ s }}">{{ s }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="secondary-button small-btn">+ Добавить</button>
+                </form>
+              </div>
+
+            </div>{# /spec-row #}
+            {% endfor %}
+          {% else %}
+            <p class="muted" style="padding:8px 0; font-size:12px">Спецификации не добавлены.</p>
+          {% endif %}
+
+          {# ── Панель действий — компактная строка ──────────────────────────── #}
+          <div class="site-actions-bar">
+            <details class="inline-action">
+              <summary class="secondary-button small-btn">+ Спецификация</summary>
+              <div class="inline-action-form" style="width:420px; left:0; right:auto">
+                <form class="project-form" method="post" action="/sites/{{ site.id }}/specifications">
+                  <label>Название *<input name="title" placeholder="Спецификация работ" required></label>
+                  <label>Тип
+                    <select name="spec_type">
+                      {% for t in ["Работы","Оборудование","Материалы","ПО","Документация","Прочее"] %}
+                        <option value="{{ t }}">{{ t }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                  <label>Статус
+                    <select name="status">
+                      {% for s in ["Черновик","Согласовано","Подписано"] %}
+                        <option value="{{ s }}">{{ s }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                  <label>Готовность, %<input name="progress_percent" type="number" min="0" max="100" value="0"></label>
+                  <label>Ответственный
+                    {% set field_name = "owner" %}{% set current_value = "" %}
+                    {% include "partials/person_select.html" %}
+                  </label>
+                  <label>Сумма<input name="total_amount" placeholder="10 000 000"></label>
+                  <label class="wide">Комментарий<input name="comment"></label>
+                  <button type="submit">Добавить</button>
+                </form>
+              </div>
+            </details>
+
+            <details class="inline-action">
+              <summary class="secondary-button small-btn">✎ Площадка</summary>
+              <div class="inline-action-form" style="width:380px; left:0; right:auto">
+                <form class="project-form" method="post" action="/sites/{{ site.id }}/update">
+                  <label>Название<input name="name" value="{{ site.name }}" required></label>
+                  <label>Ответственный
+                    {% set field_name = "owner" %}{% set current_value = site.owner %}
+                    {% include "partials/person_select.html" %}
+                  </label>
+                  <label>Статус
+                    <select name="status">
+                      {% for s in ["Не начата","В работе","Завершена","Приостановлена"] %}
+                        <option value="{{ s }}" {% if s == site.status %}selected{% endif %}>{{ s }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                  <label class="wide">Описание<input name="description" value="{{ site.description }}"></label>
+                  <label class="wide">Комментарий<input name="comment" value="{{ site.comment }}"></label>
+                  <button type="submit">Сохранить</button>
+                </form>
+                <form method="post" action="/sites/{{ site.id }}/delete" style="margin-top:6px">
+                  <button type="submit" class="danger-button" onclick="return confirm('Удалить площадку?')">Удалить площадку</button>
+                </form>
+              </div>
+            </details>
+          </div>
+
+        </div>{# /site-detail-panel #}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{# ── Добавить площадку ────────────────────────────────────────────────────── #}
+<details class="action-panel" style="margin-top:12px">
+  <summary>+ Добавить площадку</summary>
+  <div class="action-panel-body">
+    <form class="project-form" method="post" action="/projects/{{ project.id }}/sites">
+      <label>Название *<input name="name" placeholder="Ульяновск" required></label>
+      <label>Ответственный
+        {% set field_name = "owner" %}{% set current_value = "" %}
+        {% include "partials/person_select.html" %}
+      </label>
+      <label>Статус
+        <select name="status">
+          {% for s in ["Не начата","В работе","Завершена","Приостановлена"] %}
+            <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="wide">Описание<input name="description" placeholder="Краткое описание"></label>
+      <label class="wide">Комментарий<input name="comment" placeholder="Риски, блокеры"></label>
+      <button type="submit">Добавить площадку</button>
+    </form>
+  </div>
+</details>
+
+{% if not sites %}
+<p class="muted" style="padding:24px 0; text-align:center">Площадки не добавлены. Создайте первую площадку.</p>
+{% endif %}
+
+<script>
+function toggleSite(siteId, btn) {
+  var row = document.getElementById('site-detail-' + siteId);
+  var open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : 'table-row';
+  btn.textContent = open ? '↓ детали' : '↑ скрыть';
+}
+function toggleItems(specId, btn) {
+  var panel = document.getElementById('items-' + specId);
+  var open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? 'позиции' : 'скрыть позиции';
+}
+
+// При загрузке страницы: если в URL есть якорь #site-{id},
+// автоматически открываем панель этой площадки и прокручиваем к ней.
+// Это сохраняет контекст после POST-редиректа (добавление позиции и др.).
+(function() {
+  var hash = window.location.hash; // напр. "#site-abc123"
+  if (!hash) return;
+  var m = hash.match(/^#site-([a-z0-9\-]+)$/);
+  if (!m) return;
+  var siteId = m[1];
+  var row = document.getElementById('site-detail-' + siteId);
+  if (!row) return;
+
+  // Открываем панель площадки
+  row.style.display = 'table-row';
+  var btn = document.querySelector('[data-site="' + siteId + '"] .site-toggle-btn');
+  if (btn) btn.textContent = '↑ скрыть';
+
+  // Открываем все панели позиций внутри этой площадки
+  var itemPanels = row.querySelectorAll('[id^="items-"]');
+  itemPanels.forEach(function(panel) {
+    panel.style.display = 'block';
+  });
+
+  // Прокручиваем к строке площадки
+  var mainRow = document.getElementById('site-row-' + siteId);
+  if (mainRow) {
+    setTimeout(function() { mainRow.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 100);
+  }
+
+  // Убираем якорь из URL чтобы не открывалось при обычной навигации
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+})();
+</script>
+
+<style>
+/* ── Таблица площадок ────────────────────────────────────────────────────── */
+.site-main-row td { vertical-align: middle; }
+.site-main-row.site-done { opacity: 0.65; }
+.site-main-row.site-paused { background: #fffbeb; }
+
+/* ── Раскрывающаяся панель ───────────────────────────────────────────────── */
+.site-detail-row > td { padding: 0 !important; }
+.site-detail-panel {
+  padding: 10px 16px 12px;
+  background: #f8f9fc;
+  border-top: 2px solid var(--accent);
+}
+
+/* ── Блок спецификации ───────────────────────────────────────────────────── */
+.spec-row {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  margin-bottom: 6px;
+  overflow: visible;
+  position: relative;
+}
+.spec-row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  flex-wrap: wrap;
+}
+.spec-row-title {
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spec-amount {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Тип-пилюля */
+.spec-type-pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #e8eaf0;
+  color: #555;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.spec-type-работы       { background: #dbeafe; color: #1d4ed8; }
+.spec-type-оборудование { background: #fef3c7; color: #92400e; }
+.spec-type-материалы    { background: #d1fae5; color: #065f46; }
+.spec-type-по           { background: #ede9fe; color: #5b21b6; }
+.spec-type-документация { background: #fee2e2; color: #991b1b; }
+
+/* ── Таблица позиций ─────────────────────────────────────────────────────── */
+.spec-items-panel {
+  border-top: 1px solid var(--line);
+  padding: 8px 10px;
+}
+.spec-items-table { font-size: 13px; }
+.spec-items-table th { font-size: 12px; padding: 6px 8px; }
+.spec-items-table td { padding: 6px 8px; vertical-align: middle; }
+/* Разрешаем popup формам вылезать за границы ячеек таблицы */
+.spec-items-table td.row-actions { position: relative; overflow: visible; }
+.spec-items-panel { overflow: visible; }
+
+/* ── Форма добавления позиции в одну строку ──────────────────────────────── */
+.inline-add-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.inline-add-form input,
+.inline-add-form select {
+  height: 30px;
+  padding: 0 6px;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  flex: 1;
+  min-width: 80px;
+}
+
+/* ── Панель действий площадки ────────────────────────────────────────────── */
+.site-actions-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  position: relative;
+}
+
+/* ── Общие утилиты ───────────────────────────────────────────────────────── */
+.spec-cell { display: inline-flex; align-items: center; gap: 4px; }
+.spec-status { font-size: 13px; font-weight: 700; color: var(--muted); }
+.spec-status-подписано  { color: var(--ok); }
+.spec-status-согласовано { color: var(--accent); }
+.spec-status-черновик   { color: var(--muted); }
+
+.progress-inline { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
+.progress-bar-mini {
+  display: inline-block; height: 6px; min-width: 4px; max-width: 50px;
+  border-radius: 3px; background: var(--accent);
+}
+
+.badge-green  { background: #d1fadf; color: #027a48; }
+.badge-blue   { background: #eff6ff; color: #1d4ed8; }
+.badge-yellow { background: #fef9c3; color: #854d0e; }
+
+.inline-action { position: relative; display: inline-block; }
+.inline-action > summary { cursor: pointer; list-style: none; }
+.inline-action > summary::-webkit-details-marker { display: none; }
+.inline-action-form {
+  position: absolute;
+  /* По умолчанию открывается влево от кнопки, чтобы не уходить за правый край */
+  right: 0; left: auto; top: calc(100% + 4px);
+  z-index: 100;
+  width: 420px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.16);
+}
+/* Внутри панели действий площадки форма открывается вправо */
+.site-actions-bar .inline-action-form {
+  left: 0; right: auto;
+}
+
+.small-btn { padding: 4px 10px; min-height: 28px; font-size: 13px; }
+.action-panel-body { padding: 14px; border-top: 1px solid var(--line); }
+
+.item-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 9px; background: var(--accent);
+  color: #fff; font-size: 12px; font-weight: 700;
+}
+</style>

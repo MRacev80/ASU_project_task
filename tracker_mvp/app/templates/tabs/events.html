@@ -1,6 +1,38 @@
 <div class="sheet-title">
   <h2>Журнал</h2>
-  <p>История изменений карточки проекта, задач, документов и действий системы.</p>
+  <p>История изменений карточки проекта, задач, документов, закупок, рисков и действий системы.</p>
 </div>
+
+<form class="filter-bar" method="get" action="/projects/{{ project.id }}/events">
+  <label>
+    Событие
+    <select name="event_type">
+      <option value="">Все события</option>
+      {% for item in event_types %}
+        <option value="{{ item }}" {% if event_type == item %}selected{% endif %}>{{ item }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    Сущность
+    <select name="event_entity">
+      <option value="">Все сущности</option>
+      {% for item in event_entities %}
+        <option value="{{ item }}" {% if event_entity == item %}selected{% endif %}>{{ item }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    Источник
+    <select name="event_source">
+      <option value="">Все источники</option>
+      {% for item in event_sources %}
+        <option value="{{ item }}" {% if event_source == item %}selected{% endif %}>{{ item }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Применить</button>
+  <a class="secondary-button" href="/projects/{{ project.id }}/events">Сбросить</a>
+</form>
 
 {% include "partials/event_list.html" %}

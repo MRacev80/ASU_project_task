@@ -1,0 +1,37 @@
+{% set source_key = entity_type ~ ":" ~ entity_id %}
+<div class="entity-links">
+  <div class="entity-link-list">
+    {% for link in link_views_by_source.get(source_key, []) %}
+      <div class="entity-link-chip">
+        <span>{{ link.relation_type }}: {{ link.other_label }}</span>
+        {% if link.note %}<small>{{ link.note }}</small>{% endif %}
+        <form method="post" action="/links/{{ link.id }}/delete">
+          <input type="hidden" name="return_tab" value="{{ return_tab }}">
+          <button class="link-delete-button" type="submit" title="Удалить связь">×</button>
+        </form>
+      </div>
+    {% else %}
+      <small>Нет связей</small>
+    {% endfor %}
+  </div>
+
+  <details class="row-actions link-action">
+    <summary>Связать</summary>
+    <form class="row-edit-form" method="post" action="/projects/{{ project.id }}/links">
+      <input type="hidden" name="source_type" value="{{ entity_type }}">
+      <input type="hidden" name="source_id" value="{{ entity_id }}">
+      <input type="hidden" name="return_tab" value="{{ return_tab }}">
+      <select name="target_ref" required>
+        <option value="">Выберите объект</option>
+        {% for target in link_targets %}
+          {% if target["type"] != entity_type or target["id"] != entity_id %}
+            <option value="{{ target["type"] }}:{{ target["id"] }}">{{ target["label"] }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+      <input name="relation_type" value="связано">
+      <input name="note" placeholder="Примечание">
+      <button type="submit">Создать связь</button>
+    </form>
+  </details>
+</div>

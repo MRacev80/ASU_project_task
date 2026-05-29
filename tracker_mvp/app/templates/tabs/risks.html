@@ -1,0 +1,182 @@
+<div class="sheet-title">
+  <h2>Риски</h2>
+  <p>Реестр рисков проекта: вероятность, влияние, уровень, мера реагирования и ответственный.</p>
+</div>
+
+<details class="action-panel">
+  <summary>Добавить риск</summary>
+  <form class="project-form" method="post" action="/projects/{{ project.id }}/risks">
+    <label>
+      Риск
+      <input name="title" required>
+    </label>
+    <label>
+      Вероятность
+      <select name="probability">
+        <option value="">Не оценена</option>
+        <option>Низкая</option>
+        <option>Средняя</option>
+        <option>Высокая</option>
+      </select>
+    </label>
+    <label>
+      Влияние
+      <select name="impact">
+        <option value="">Не оценено</option>
+        <option>Низкое</option>
+        <option>Среднее</option>
+        <option>Высокое</option>
+      </select>
+    </label>
+    <label>
+      Ответственный
+      {% set field_name = "owner" %}
+      {% set current_value = "" %}
+      {% include "partials/person_select.html" %}
+    </label>
+    <label>
+      Статус
+      <select name="status">
+        {% for status in ["Открыт", "В работе", "Снижен", "Закрыт"] %}
+          <option value="{{ status }}">{{ status }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Связь
+      <select name="linked_entity_type">
+        <option value="">Без связи</option>
+        <option value="task">Задача</option>
+        <option value="document">Документ</option>
+        <option value="procurement">Закупка</option>
+        <option value="p3">P3.express</option>
+      </select>
+    </label>
+    <label class="wide">
+      ID связанной сущности
+      <input name="linked_entity_id" placeholder="Можно заполнить позже через связи сущностей">
+    </label>
+    <label class="wide">
+      Описание
+      <textarea name="description"></textarea>
+    </label>
+    <label class="wide">
+      Мера реагирования
+      <textarea name="mitigation"></textarea>
+    </label>
+    <button type="submit">Добавить риск</button>
+  </form>
+</details>
+
+<form class="filter-bar" method="get" action="/projects/{{ project.id }}/risks">
+  <label>
+    Статус
+    <select name="risk_status">
+      <option value="">Все статусы</option>
+      {% for status in risk_statuses %}
+        <option value="{{ status }}" {% if risk_status == status %}selected{% endif %}>{{ status }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    Уровень
+    <select name="risk_level">
+      <option value="">Все уровни</option>
+      {% for level in risk_levels %}
+        <option value="{{ level }}" {% if risk_level == level %}selected{% endif %}>{{ level }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    Ответственный
+    <select name="risk_owner">
+      <option value="">Все ответственные</option>
+      {% for owner in risk_owners %}
+        <option value="{{ owner }}" {% if risk_owner == owner %}selected{% endif %}>{{ owner }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Применить</button>
+  <a class="secondary-button" href="/projects/{{ project.id }}/risks">Сбросить</a>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Статус</th>
+        <th>Уровень</th>
+        <th>Риск</th>
+        <th>Вероятность</th>
+        <th>Влияние</th>
+        <th>Ответственный</th>
+        <th>Мера реагирования</th>
+        <th>Связь</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for risk in risks %}
+        <tr class="risk-row risk-{{ risk.risk_level|replace(' ', '-') }}">
+          <td><span class="badge">{{ risk.status }}</span></td>
+          <td><span class="badge">{{ risk.risk_level or "Не оценен" }}{% if risk.risk_score %} / {{ risk.risk_score }}{% endif %}</span></td>
+          <td>
+            <strong>{{ risk.title }}</strong>
+            {% if risk.description %}<small>{{ risk.description }}</small>{% endif %}
+          </td>
+          <td>{{ risk.probability }}</td>
+          <td>{{ risk.impact }}</td>
+          <td>{{ risk.owner }}</td>
+          <td>{{ risk.mitigation }}</td>
+          <td>
+            {% if risk.linked_entity_type or risk.linked_entity_id %}
+              <small>{{ risk.linked_entity_type }}{% if risk.linked_entity_id %}: {{ risk.linked_entity_id }}{% endif %}</small>
+            {% endif %}
+            {% set entity_type = "risk" %}
+            {% set entity_id = risk.id %}
+            {% set return_tab = "risks" %}
+            {% include "partials/entity_links.html" %}
+          </td>
+          <td>
+            <details class="row-actions">
+              <summary>Изменить</summary>
+              <form class="row-edit-form" method="post" action="/risks/{{ risk.id }}/update">
+                <input name="title" value="{{ risk.title }}" required>
+                <select name="probability">
+                  {% for probability in ["", "Низкая", "Средняя", "Высокая"] %}
+                    <option value="{{ probability }}" {% if risk.probability == probability %}selected{% endif %}>{{ probability or "Не оценена" }}</option>
+                  {% endfor %}
+                </select>
+                <select name="impact">
+                  {% for impact in ["", "Низкое", "Среднее", "Высокое"] %}
+                    <option value="{{ impact }}" {% if risk.impact == impact %}selected{% endif %}>{{ impact or "Не оценено" }}</option>
+                  {% endfor %}
+                </select>
+                {% set field_name = "owner" %}
+                {% set current_value = risk.owner %}
+                {% include "partials/person_select.html" %}
+                <select name="status">
+                  {% for status in ["Открыт", "В работе", "Снижен", "Закрыт"] %}
+                    <option value="{{ status }}" {% if risk.status == status %}selected{% endif %}>{{ status }}</option>
+                  {% endfor %}
+                </select>
+                <input name="linked_entity_type" value="{{ risk.linked_entity_type }}" placeholder="Связь">
+                <input name="linked_entity_id" value="{{ risk.linked_entity_id }}" placeholder="ID связи">
+                <textarea name="description" placeholder="Описание">{{ risk.description }}</textarea>
+                <textarea name="mitigation" placeholder="Мера реагирования">{{ risk.mitigation }}</textarea>
+                <button type="submit">Сохранить</button>
+              </form>
+              <form method="post" action="/risks/{{ risk.id }}/delete">
+                <button class="danger-button" type="submit">Удалить</button>
+              </form>
+            </details>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="9" class="muted">Риски пока не добавлены.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

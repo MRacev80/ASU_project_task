@@ -1,0 +1,86 @@
+<div class="sheet-title">
+  <h2>Работы и часы</h2>
+  <p>Импорт из разделов 1-2 листа АСУП: работы, нормочасы и сопутствующие расходы.</p>
+</div>
+
+<section class="summary-strip">
+  <article>
+    <strong>{{ work_items|length }}</strong>
+    <span>строк</span>
+  </article>
+  <article>
+    <strong>{{ work_totals.quantity }}</strong>
+    <span>кол-во / часы</span>
+  </article>
+  <article>
+    <strong>{{ work_totals.sum_no_vat }}</strong>
+    <span>сумма без НДС</span>
+  </article>
+  <article>
+    <strong>{{ work_totals.sum_with_vat }}</strong>
+    <span>сумма с НДС</span>
+  </article>
+</section>
+
+<form class="filter-bar" method="get" action="/projects/{{ project.id }}/budget">
+  <label>
+    Раздел
+    <select name="budget_section">
+      <option value="">Все разделы</option>
+      {% for section in work_sections %}
+        <option value="{{ section }}" {% if budget_section == section %}selected{% endif %}>{{ section }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    Поиск
+    <input name="budget_search" value="{{ budget_search }}" placeholder="Работа, группа или файл">
+  </label>
+  <button type="submit">Применить</button>
+  <a class="secondary-button" href="/projects/{{ project.id }}/budget">Сбросить</a>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Раздел / группа</th>
+        <th>Работа</th>
+        <th>Ед.</th>
+        <th>Кол-во / часы</th>
+        <th>Цена</th>
+        <th>Сумма без НДС</th>
+        <th>Сумма с НДС</th>
+        <th>Источник</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for group in work_section_groups %}
+        <tr class="section-total-row">
+          <td colspan="3"><strong>{{ group.section }}</strong></td>
+          <td>{{ group.totals.quantity }}</td>
+          <td></td>
+          <td>{{ group.totals.sum_no_vat }}</td>
+          <td>{{ group.totals.sum_with_vat }}</td>
+          <td></td>
+        </tr>
+        {% for item in group["items"] %}
+          <tr>
+            <td>{{ item.group_name }}</td>
+            <td><strong>{{ item.name }}</strong></td>
+            <td>{{ item.unit }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unit_price }}</td>
+            <td>{{ item.sum_no_vat }}</td>
+            <td>{{ item.sum_with_vat }}</td>
+            <td><small>{{ item.source_file }}</small></td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="8" class="muted">Работы еще не импортированы. Добавьте расчет КП/СС на вкладке Документы.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

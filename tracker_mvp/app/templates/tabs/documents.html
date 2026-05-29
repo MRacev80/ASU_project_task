@@ -3,4 +3,60 @@
   <p>Комплект документов проекта, статусы и локальные пути к файлам.</p>
 </div>
 
+{% if request.query_params.get("error") %}
+  <div class="notice danger">{{ request.query_params.get("error") }}</div>
+{% endif %}
+
+<details class="action-panel">
+  <summary>Импортировать расчет КП / СС</summary>
+  <div class="action-panel-body">
+  <form class="project-form" method="post" action="/projects/{{ project.id }}/calculation-import">
+    <label class="wide">
+      Путь к Excel-файлу расчета
+      <input name="file_path" placeholder="C:\Users\gami\Orgtask\02_Шаблоны\Расчет СС.xls" required>
+    </label>
+    {# Если у проекта есть площадки — предлагаем привязать импорт к площадке.
+       Это позволяет отслеживать работы и закупки отдельно по каждой площадке. #}
+    {% if sites %}
+    <label>
+      Площадка (необязательно)
+      <select name="site_id">
+        <option value="">Без привязки к площадке</option>
+        {% for site in sites %}
+          <option value="{{ site.id }}">{{ site.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Спецификация работ
+      <select name="work_specification_id">
+        <option value="">Без спецификации</option>
+        {% for spec in specifications %}
+          {% if spec.spec_type == "Работы" %}
+            <option value="{{ spec.id }}">[{{ spec.site_id[:6] }}…] {{ spec.title }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Спецификация оборудования
+      <select name="equipment_specification_id">
+        <option value="">Без спецификации</option>
+        {% for spec in specifications %}
+          {% if spec.spec_type == "Оборудование" %}
+            <option value="{{ spec.id }}">[{{ spec.site_id[:6] }}…] {{ spec.title }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </label>
+    {% else %}
+    <input type="hidden" name="site_id" value="">
+    <input type="hidden" name="work_specification_id" value="">
+    <input type="hidden" name="equipment_specification_id" value="">
+    {% endif %}
+    <button type="submit">Импортировать работы и закупки</button>
+  </form>
+  </div>
+</details>
+
 {% include "partials/document_list.html" %}

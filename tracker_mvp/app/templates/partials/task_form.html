@@ -12,7 +12,9 @@
     <option>Высокий</option>
     <option>Низкий</option>
   </select>
-  <input name="assignee" placeholder="Исполнитель">
+  {% set field_name = "assignee" %}
+  {% set current_value = "" %}
+  {% include "partials/person_select.html" %}
   <input name="due_date" type="date">
   <textarea name="description" placeholder="Описание"></textarea>
   <button type="submit">Добавить</button>

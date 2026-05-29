@@ -1,0 +1,300 @@
+<header class="tab-header">
+  <div>
+    <h2>Фазы проекта</h2>
+    <p>Инженерный жизненный цикл АСУ ТП: состояние, входные данные, выходные артефакты, критерии готовности, техаудит и решения по переходу.</p>
+  </div>
+  <div class="tab-actions">
+    <a class="secondary-button" href="/projects/{{ project.id }}/graph">Связи проекта</a>
+    {% if selected_phase %}
+      <a class="secondary-button" href="#phase-audit">Техаудит</a>
+    {% endif %}
+  </div>
+</header>
+
+{% if selected_phase %}
+  <section class="phase-health card">
+    <div class="section-head">
+      <div>
+        <h3>Состояние проекта</h3>
+        <p>Состояние проекта без погружения РП в техническую реализацию.</p>
+      </div>
+      <div class="phase-badges">
+        <span class="phase-badge phase-blue">Фаза: {{ selected_phase.name }}</span>
+        <span class="phase-badge gate-{{ selected_phase.gate_status|lower|replace(' ', '-') }}">{{ selected_phase.gate_status }}</span>
+      </div>
+    </div>
+    <div class="health-grid">
+      {% for item in project_health %}
+        <div class="health-item phase-{{ item.tone }}">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="health-legend" aria-label="Расшифровка состояний">
+      {% for option in health_options %}
+        <span class="legend-item">
+          <i class="legend-color phase-{{ option.value }}"></i>
+          <strong>{{ option.label }}</strong>
+          <small>{{ option.description }}</small>
+        </span>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="phase-board-section card">
+    <div class="section-head">
+      <div>
+        <h3>Доска фаз</h3>
+        <p>Стандартная цепочка фаз проекта АСУ ТП.</p>
+      </div>
+    </div>
+    <div class="phase-board">
+      {% for card in phase_cards %}
+        {% set phase = card.phase %}
+        <a class="phase-card phase-{{ phase.health }} {% if phase.id == selected_phase.id %}active{% endif %}" href="/projects/{{ project.id }}/phases?phase={{ phase.id }}">
+          <div class="phase-card-top">
+            <strong>{{ phase.name }}</strong>
+            <span class="phase-gate">{{ phase.gate_status }}</span>
+          </div>
+          <div class="phase-status-row">
+            <span>{{ phase.status }}</span>
+            <strong>{{ phase.progress_percent }}%</strong>
+          </div>
+          <div class="phase-progress" aria-label="Готовность {{ phase.progress_percent }}%">
+            <div style="width: {{ phase.progress_percent }}%"></div>
+          </div>
+          <div class="phase-meta">
+            <span>План: {{ phase.start_plan or "-" }}{% if phase.finish_plan %}–{{ phase.finish_plan }}{% endif %}</span>
+            <span>Факт: {{ phase.start_fact or "-" }}{% if phase.finish_fact %}–{{ phase.finish_fact }}{% endif %}</span>
+            <span>Состояние: {{ card.health_label }}</span>
+            <span>Риски: {{ card.risk_count }}</span>
+            <span>Блокеры: {{ card.blocker_count }}</span>
+            <span>Критерии: {{ card.open_dod_count }}</span>
+            <span>Аудит: {{ card.open_audit_count }}</span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section id="phase-detail" class="phase-detail card">
+    <div class="phase-detail-head">
+      <div>
+        <div class="title-line">
+          <h3>{{ selected_phase.name }}</h3>
+          <span class="phase-badge gate-{{ selected_phase.gate_status|lower|replace(' ', '-') }}">{{ selected_phase.gate_status }}</span>
+        </div>
+        <p>{{ selected_phase.summary or "Краткое состояние фазы пока не заполнено." }}</p>
+      </div>
+      <div class="summary-grid">
+        <div><span>РП</span><strong>{{ selected_phase.project_manager or project.project_manager or "-" }}</strong></div>
+        <div><span>Технический руководитель</span><strong>{{ selected_phase.technical_lead or "-" }}</strong></div>
+        <div><span>План</span><strong>{{ selected_phase.start_plan or "-" }}{% if selected_phase.finish_plan %}–{{ selected_phase.finish_plan }}{% endif %}</strong></div>
+        <div><span>Готовность</span><strong>{{ selected_phase.progress_percent }}%</strong></div>
+      </div>
+    </div>
+
+    <details class="phase-edit-panel">
+      <summary>Редактировать фазу</summary>
+      <form class="project-form phase-form" method="post" action="/phases/{{ selected_phase.id }}">
+        <label>Статус
+          <select name="status">
+            {% for value in ["Не начато", "В работе", "Активная", "Параллельно", "Завершена", "Приостановлена"] %}
+              <option value="{{ value }}" {% if selected_phase.status == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Состояние
+          <select name="health">
+            {% for option in health_options %}
+              <option value="{{ option.value }}" {% if selected_phase.health == option.value %}selected{% endif %}>{{ option.label }} — {{ option.description }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Готовность, %
+          <input name="progress_percent" value="{{ selected_phase.progress_percent }}" inputmode="numeric">
+        </label>
+        <label>Решение по переходу
+          <select name="gate_status">
+            {% for value in ["Не готов", "На аудите", "Разрешен", "Разрешен с рисками", "Стоп"] %}
+              <option value="{{ value }}" {% if selected_phase.gate_status == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        {% for field, label in [
+          ("schedule_health", "Сроки"),
+          ("technical_health", "Техника"),
+          ("risk_health", "Риски"),
+          ("procurement_health", "Закупки"),
+          ("documentation_health", "Документы"),
+          ("testing_health", "Испытания")
+        ] %}
+          <label>{{ label }}
+            <select name="{{ field }}">
+              {% set current = selected_phase|attr(field) %}
+              {% for option in health_options %}
+                <option value="{{ option.value }}" {% if current == option.value %}selected{% endif %}>{{ option.label }} — {{ option.description }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        {% endfor %}
+        <label>План старт<input name="start_plan" value="{{ selected_phase.start_plan }}"></label>
+        <label>План финиш<input name="finish_plan" value="{{ selected_phase.finish_plan }}"></label>
+        <label>Факт старт<input name="start_fact" value="{{ selected_phase.start_fact }}"></label>
+        <label>Факт финиш<input name="finish_fact" value="{{ selected_phase.finish_fact }}"></label>
+        <label>РП<input name="project_manager" list="company-people-list" value="{{ selected_phase.project_manager }}"></label>
+        <label>Технический руководитель<input name="technical_lead" list="company-people-list" value="{{ selected_phase.technical_lead }}"></label>
+        <label class="wide">Краткое состояние<textarea name="summary" rows="3">{{ selected_phase.summary }}</textarea></label>
+        <label class="wide">Входные данные
+          <small>Формат строки: название | состояние | комментарий. Состояния: Не готово, В работе, Готово, Риск.</small>
+          <textarea name="inputs_text" rows="6">{{ selected_phase_inputs_text }}</textarea>
+        </label>
+        <label class="wide">Выходные артефакты
+          <small>Формат строки: название | состояние | комментарий. Можно добавлять и удалять строки.</small>
+          <textarea name="outputs_text" rows="6">{{ selected_phase_outputs_text }}</textarea>
+        </label>
+        <label class="wide">Критерии готовности
+          <small>Формат строки: [ ] критерий | комментарий или [x] критерий | комментарий.</small>
+          <textarea name="dod_text" rows="6">{{ selected_phase_dod_text }}</textarea>
+        </label>
+        <label class="wide">Комментарий к решению по переходу<textarea name="gate_comment" rows="3">{{ selected_phase.gate_comment }}</textarea></label>
+        <button class="wide" type="submit">Сохранить фазу</button>
+      </form>
+    </details>
+
+    <div class="phase-detail-grid three">
+      <div class="phase-panel">
+        <h3>Входные данные</h3>
+        {% for item in selected_phase_inputs %}
+          <div class="readiness-row">
+            <strong>{{ item.title }}</strong>
+            <span class="readiness-state">{{ item.state or "Не готово" }}</span>
+            <small>{{ item.comment or "-" }}</small>
+          </div>
+        {% else %}
+          <p class="muted">Входы пока не заполнены.</p>
+        {% endfor %}
+      </div>
+      <div class="phase-panel">
+        <h3>Выходные артефакты</h3>
+        {% for item in selected_phase_outputs %}
+          <div class="readiness-row">
+            <strong>{{ item.title }}</strong>
+            <span class="readiness-state">{{ item.state or "Не готово" }}</span>
+            <small>{{ item.comment or "-" }}</small>
+          </div>
+        {% else %}
+          <p class="muted">Выходы пока не заполнены.</p>
+        {% endfor %}
+      </div>
+      <div class="phase-panel">
+        <h3>Критерии готовности</h3>
+        {% for item in selected_phase_dod %}
+          <label class="dod-row">
+            <input type="checkbox" {% if item.done %}checked{% endif %} disabled>
+            <span>{{ item.title }}</span>
+          </label>
+        {% else %}
+          <p class="muted">Критерии готовности пока не заполнены.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="phase-detail-grid two">
+      <div class="phase-panel">
+        <h3>Риски и блокеры</h3>
+        <table class="simple-table">
+          <thead>
+            <tr>
+              <th>Название</th>
+              <th>Уровень</th>
+              <th>Владелец</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for risk in phase_risks %}
+              <tr>
+                <td>{{ risk.title }}</td>
+                <td>{{ risk.risk_level or "-" }}</td>
+                <td>{{ risk.owner or "-" }}</td>
+                <td>{{ risk.status }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4">Связанных рисков пока нет.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% set entity_type = "phase" %}
+        {% set entity_id = selected_phase.id %}
+        {% set return_tab = "phases" %}
+        {% include "partials/entity_links.html" %}
+      </div>
+
+      <div id="phase-audit" class="phase-panel audit-panel">
+        <h3>Техаудит</h3>
+        {% if selected_phase_audit %}
+          <dl class="audit-list">
+            <dt>Статус</dt><dd>{{ selected_phase_audit.status }}</dd>
+            <dt>Аудитор</dt><dd>{{ selected_phase_audit.auditor or "-" }}</dd>
+            <dt>Дата</dt><dd>{{ selected_phase_audit.audit_date or "-" }}</dd>
+            <dt>Замечания</dt><dd>{{ selected_phase_audit.open_findings_count }} открытых, {{ selected_phase_audit.critical_findings_count }} критичных</dd>
+            <dt>Решение</dt><dd>{{ selected_phase_audit.decision_comment or selected_phase_audit.decision or "-" }}</dd>
+          </dl>
+        {% else %}
+          <p class="muted">Аудит по фазе еще не создан.</p>
+        {% endif %}
+        <details class="phase-edit-panel">
+          <summary>Новый аудит</summary>
+          <form class="project-form compact-form" method="post" action="/phases/{{ selected_phase.id }}/audits">
+            <input name="auditor" placeholder="Аудитор / технический руководитель" list="company-people-list">
+            <input name="audit_date" placeholder="Дата аудита">
+            <select name="status">
+              <option>В работе</option>
+              <option>Завершен</option>
+              <option>Не начат</option>
+            </select>
+            <input name="open_findings_count" placeholder="Открытые замечания" value="0">
+            <input name="critical_findings_count" placeholder="Критичные замечания" value="0">
+            <select name="decision">
+              <option value="">Решение не принято</option>
+              <option>Разрешен</option>
+              <option>Разрешен с рисками</option>
+              <option>Стоп</option>
+            </select>
+            <textarea name="findings" placeholder="Замечания"></textarea>
+            <textarea name="decision_comment" placeholder="Краткое решение"></textarea>
+            <button type="submit">Создать аудит</button>
+          </form>
+        </details>
+      </div>
+    </div>
+
+    <div class="gate-decision">
+      <div class="gate-head">
+        <div>
+          <h3>Решение по переходу</h3>
+          <p>Решение по переходу фиксируется отдельно от задач.</p>
+        </div>
+        <span class="phase-badge gate-{{ selected_phase.gate_status|lower|replace(' ', '-') }}">{{ selected_phase.gate_status }}</span>
+      </div>
+      <div class="gate-grid">
+        <div><span>Решение</span><strong>{{ selected_phase.gate_status }}</strong></div>
+        <div><span>Принял</span><strong>{{ selected_phase.gate_decision_by or "-" }}</strong></div>
+        <div><span>Дата</span><strong>{{ selected_phase.gate_decision_at or "-" }}</strong></div>
+        <div><span>Связанные риски</span><strong>{{ phase_risks|length }}</strong></div>
+      </div>
+      <form class="gate-actions" method="post" action="/phases/{{ selected_phase.id }}/gate">
+        <input name="gate_decision_by" placeholder="Кто принял" list="company-people-list" value="{{ selected_phase.gate_decision_by }}">
+        <input name="gate_comment" placeholder="Комментарий" value="{{ selected_phase.gate_comment }}">
+        <button name="gate_status" value="На аудите" type="submit">На аудит</button>
+        <button class="go-button" name="gate_status" value="Разрешен" type="submit">Разрешен</button>
+        <button class="risk-button" name="gate_status" value="Разрешен с рисками" type="submit">Разрешен с рисками</button>
+        <button class="stop-button" name="gate_status" value="Стоп" type="submit">Стоп</button>
+      </form>
+    </div>
+  </section>
+{% else %}
+  <p class="muted">Фазы будут созданы автоматически после открытия проекта.</p>
+{% endif %}

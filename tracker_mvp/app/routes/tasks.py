@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Form
 from fastapi.responses import RedirectResponse
@@ -59,17 +59,22 @@ def create_task(
     description: str = Form(""),
     type: str = Form("работа"),
     priority: str = Form("Средний"),
-    due_date: date | None = Form(None),
+    due_date: str = Form(""),
     assignee: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    description = description if isinstance(description, str) else ""
+    type = type if isinstance(type, str) else "работа"
+    priority = priority if isinstance(priority, str) else "Средний"
+    assignee = assignee if isinstance(assignee, str) else ""
     task = Task(
         project_id=project_id,
         title=title,
         description=description,
         type=type,
+        status="Бэклог",
         priority=priority,
-        due_date=due_date,
+        due_date=parse_due_date(due_date),
         assignee=assignee,
     )
     db.add(task)
@@ -81,9 +86,10 @@ def create_task(
         entity_type="task",
         entity_id=task.id,
         description=f"Создана задача: {task.title}",
+        after_state={"title": task.title, "status": task.status, "assignee": task.assignee},
     )
     db.commit()
-    return RedirectResponse(url=f"/projects/{project_id}", status_code=303)
+    return RedirectResponse(url=f"/projects/{project_id}/tasks", status_code=303)
 
 
 @router.post("/tasks/{task_id}/status")
@@ -100,6 +106,20 @@ def change_task_status(task_id: str, status: str = Form(...), db: Session = Depe
         entity_type="task",
         entity_id=task.id,
         description=f"Статус задачи изменен: {old_status} -> {task.status}",
+        before_state={"status": old_status},
+        after_state={"status": task.status},
     )
     db.commit()
-    return RedirectResponse(url=f"/projects/{task.project_id}", status_code=303)
+    return RedirectResponse(url=f"/projects/{task.project_id}/tasks", status_code=303)
+
+
+def parse_due_date(value: str | date) -> date | None:
+    # HTML date input отправляет пустую строку, если срок не выбран; ее нельзя отдавать FastAPI как date напрямую.
+    if isinstance(value, date):
+        return value
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None

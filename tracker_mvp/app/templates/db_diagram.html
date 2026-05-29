@@ -8,114 +8,234 @@
     <div class="panel-header">
       <h1>Диаграмма связей БД</h1>
     </div>
-    <p class="muted">Текущая реализованная схема первой итерации. Пунктиром показаны будущие таблицы, заложенные в документах.</p>
+    <p class="muted">Фактическая схема MVP: проект является корнем, рабочие таблицы связаны с ним через `project_id`.</p>
   </section>
 
-  <section class="db-diagram">
-    <div class="entity project-entity">
-      <h2>projects</h2>
-      <ul>
-        <li><strong>id</strong> PK</li>
-        <li>name</li>
-        <li>customer</li>
-        <li>automation_object</li>
-        <li>stage</li>
-        <li>status</li>
-        <li>project_manager</li>
-        <li>documents_path</li>
-        <li>description</li>
-      </ul>
+  <section class="db-summary">
+    <article>
+      <strong>Реализовано</strong>
+      <span>projects, company_people, project_phases, technical_audits, tasks, documents, work_items, procurement_items, p3_activities, p3_cycles, risks, entity_links, agent_proposals, events, settings</span>
+    </article>
+    <article>
+      <strong>Следующий слой</strong>
+      <span>интерактивная graph-view, импорт предложений из agents/outbox, расширенный before/after</span>
+    </article>
+    <article>
+      <strong>Главная связь</strong>
+      <span>projects.id -> project_id во всех рабочих таблицах</span>
+    </article>
+  </section>
+
+  <section class="db-diagram" aria-label="Схема таблиц базы данных">
+    <div class="db-column">
+      <h2>Проект</h2>
+      <div class="entity entity-root">
+        <div class="entity-title">
+          <h3>projects</h3>
+          <span class="badge-small">root</span>
+        </div>
+        <p class="entity-meta">Паспорт проекта и точка привязки всех данных.</p>
+        <ul>
+          <li><strong>id</strong> PK</li>
+          <li>project_code</li>
+          <li>name</li>
+          <li>customer</li>
+          <li>automation_object</li>
+          <li>contract_number</li>
+          <li>status</li>
+          <li>project_manager</li>
+        </ul>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><h3>company_people</h3><span class="badge-small">directory</span></div>
+        <p class="entity-meta">Справочник людей компании для выбора ответственных в проектах, задачах, рисках и P3.</p>
+        <ul>
+          <li><strong>id</strong> PK</li>
+          <li>full_name</li>
+          <li>role</li>
+          <li>department</li>
+          <li>phone</li>
+          <li>email</li>
+          <li>is_active</li>
+        </ul>
+      </div>
     </div>
 
-    <div class="entity task-entity">
-      <h2>tasks</h2>
-      <ul>
-        <li><strong>id</strong> PK</li>
-        <li><strong>project_id</strong> FK</li>
-        <li>title</li>
-        <li>type</li>
-        <li>status</li>
-        <li>priority</li>
-        <li>due_date</li>
-        <li>assignee</li>
-      </ul>
+    <div class="db-column">
+      <h2>Ежедневная работа</h2>
+      <div class="entity">
+        <div class="entity-title"><h3>tasks</h3><span class="badge-small">1:N</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li><strong>id</strong> PK</li>
+          <li>title</li>
+          <li>status</li>
+          <li>priority</li>
+          <li>due_date</li>
+          <li>assignee</li>
+        </ul>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><h3>documents</h3><span class="badge-small">1:N</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li><strong>id</strong> PK</li>
+          <li>title</li>
+          <li>type</li>
+          <li>file_path</li>
+          <li>status</li>
+        </ul>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><h3>events</h3><span class="badge-small">audit</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li><strong>id</strong> PK</li>
+          <li>actor_type</li>
+          <li>event_type</li>
+          <li>entity_type</li>
+          <li>entity_id</li>
+          <li>before_state</li>
+          <li>after_state</li>
+        </ul>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><h3>entity_links</h3><span class="badge-small">graph</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li><strong>id</strong> PK</li>
+          <li>source_type</li>
+          <li>source_id</li>
+          <li>target_type</li>
+          <li>target_id</li>
+          <li>relation_type</li>
+          <li>note</li>
+        </ul>
+      </div>
     </div>
 
-    <div class="entity document-entity">
-      <h2>documents</h2>
-      <ul>
-        <li><strong>id</strong> PK</li>
-        <li><strong>project_id</strong> FK</li>
-        <li>title</li>
-        <li>type</li>
-        <li>file_path</li>
-        <li>status</li>
-        <li>summary</li>
-      </ul>
-    </div>
+    <div class="db-column">
+      <h2>Управление проектом</h2>
+      <div class="entity">
+        <div class="entity-title"><h3>work_items</h3><span class="badge-small">import</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li>source_file</li>
+          <li>section</li>
+          <li>group_name</li>
+          <li>name</li>
+          <li>quantity</li>
+          <li>sum_no_vat</li>
+          <li>sum_with_vat</li>
+        </ul>
+      </div>
 
-    <div class="entity event-entity">
-      <h2>events</h2>
-      <ul>
-        <li><strong>id</strong> PK</li>
-        <li><strong>project_id</strong> FK</li>
-        <li>actor_type</li>
-        <li>event_type</li>
-        <li>entity_type</li>
-        <li>entity_id</li>
-        <li>description</li>
-      </ul>
-    </div>
+      <div class="entity">
+        <div class="entity-title"><h3>procurement_items</h3><span class="badge-small">import/manual</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li>source_file</li>
+          <li>section</li>
+          <li>group_name</li>
+          <li>is_group_header</li>
+          <li>name</li>
+          <li>manufacturer</li>
+          <li>supplier</li>
+          <li>status</li>
+          <li>order_date</li>
+          <li>delivery_date</li>
+        </ul>
+      </div>
 
-    <div class="entity settings-entity">
-      <h2>settings</h2>
-      <ul>
-        <li><strong>key</strong> PK</li>
-        <li>value</li>
-        <li>updated_at</li>
-      </ul>
-    </div>
+      <div class="entity">
+        <div class="entity-title"><h3>risks</h3><span class="badge-small">risk</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li>title</li>
+          <li>probability</li>
+          <li>impact</li>
+          <li>mitigation</li>
+          <li>owner</li>
+          <li>status</li>
+          <li>linked_entity_type</li>
+        </ul>
+      </div>
 
-    <div class="entity future future-budget">
-      <h2>budget_items</h2>
-      <ul>
-        <li>project_id FK</li>
-        <li>cost_item</li>
-        <li>planned_amount</li>
-        <li>actual_amount</li>
-      </ul>
-    </div>
+      <div class="entity">
+        <div class="entity-title"><h3>project_phases</h3><span class="badge-small">stage gate</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li>code</li>
+          <li>name</li>
+          <li>status</li>
+          <li>health</li>
+          <li>progress_percent</li>
+          <li>inputs</li>
+          <li>outputs</li>
+          <li>definition_of_done</li>
+          <li>gate_status</li>
+        </ul>
+      </div>
 
-    <div class="entity future future-procurement">
-      <h2>procurement_items</h2>
-      <ul>
-        <li>project_id FK</li>
-        <li>name</li>
-        <li>quantity</li>
-        <li>supplier</li>
-        <li>status</li>
-      </ul>
-    </div>
+      <div class="entity">
+        <div class="entity-title"><h3>technical_audits</h3><span class="badge-small">audit</span></div>
+        <p class="relation-note">FK: project_id -> projects.id, phase_id -> project_phases.id</p>
+        <ul>
+          <li>auditor</li>
+          <li>status</li>
+          <li>audit_date</li>
+          <li>findings</li>
+          <li>open_findings_count</li>
+          <li>critical_findings_count</li>
+          <li>decision</li>
+        </ul>
+      </div>
 
-    <div class="entity future future-risks">
-      <h2>risks</h2>
-      <ul>
-        <li>project_id FK</li>
-        <li>description</li>
-        <li>probability</li>
-        <li>impact</li>
-        <li>mitigation</li>
-      </ul>
-    </div>
+      <div class="entity">
+        <div class="entity-title"><h3>p3_activities</h3><span class="badge-small">governance</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li>code</li>
+          <li>group_code</li>
+          <li>title</li>
+          <li>owner</li>
+          <li>status</li>
+          <li>next_due_at</li>
+        </ul>
+      </div>
 
-    <svg class="relations" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
-      <line x1="260" y1="170" x2="420" y2="85" />
-      <line x1="260" y1="190" x2="420" y2="245" />
-      <line x1="260" y1="210" x2="420" y2="405" />
-      <line class="future-line" x1="260" y1="240" x2="710" y2="90" />
-      <line class="future-line" x1="260" y1="260" x2="710" y2="250" />
-      <line class="future-line" x1="260" y1="280" x2="710" y2="410" />
-    </svg>
+      <div class="entity">
+        <div class="entity-title"><h3>p3_cycles</h3><span class="badge-small">cycle</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li>title</li>
+          <li>cycle_number</li>
+          <li>start_date</li>
+          <li>end_date</li>
+          <li>duration_days</li>
+          <li>status</li>
+        </ul>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><h3>agent_proposals</h3><span class="badge-small">agent</span></div>
+        <p class="relation-note">FK: project_id -> projects.id</p>
+        <ul>
+          <li><strong>id</strong> PK</li>
+          <li>agent_name</li>
+          <li>proposal_type</li>
+          <li>title</li>
+          <li>target_type</li>
+          <li>target_id</li>
+          <li>suggested_status</li>
+          <li>status</li>
+        </ul>
+      </div>
+    </div>
   </section>
 </section>
 {% endblock %}

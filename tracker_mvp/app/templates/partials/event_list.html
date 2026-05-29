@@ -4,6 +4,18 @@
       <time>{{ event.created_at.strftime("%d.%m.%Y %H:%M") }}</time>
       <strong>{{ event.event_type }}</strong>
       <p>{{ event.description }}</p>
+      <small>{{ event.actor_type }} / {{ event.source or "ui" }} / {{ event.entity_type }}</small>
+      {% if event.before_state or event.after_state %}
+        <details class="event-state">
+          <summary>Изменения</summary>
+          {% if event.before_state %}
+            <pre>До: {{ event.before_state }}</pre>
+          {% endif %}
+          {% if event.after_state %}
+            <pre>После: {{ event.after_state }}</pre>
+          {% endif %}
+        </details>
+      {% endif %}
     </article>
   {% else %}
     <p class="muted">Событий пока нет.</p>

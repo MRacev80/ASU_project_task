@@ -1,25 +1,33 @@
-<form class="stack compact" method="post" action="/projects/{{ project.id }}/documents">
-  <input name="title" placeholder="Название документа" required>
-  <select name="type">
-    <option value="техническое задание">техническое задание</option>
-    <option value="устав проекта">устав проекта</option>
-    <option value="протокол встречи">протокол встречи</option>
-    <option value="схема">схема</option>
-    <option value="прочий документ">прочий документ</option>
-  </select>
-  <input name="file_path" placeholder="Локальный путь к файлу">
-  <textarea name="summary" placeholder="Краткое описание"></textarea>
-  <button type="submit">Добавить документ</button>
-</form>
+<details class="action-panel">
+  <summary>Добавить документ в реестр</summary>
+  <form class="stack compact import-form" method="post" action="/projects/{{ project.id }}/documents">
+    <input name="title" placeholder="Название документа" required>
+    <select name="type">
+      <option value="расчет КП/СС">расчет КП/СС</option>
+      <option value="техническое задание">техническое задание</option>
+      <option value="устав проекта">устав проекта</option>
+      <option value="протокол встречи">протокол встречи</option>
+      <option value="схема">схема</option>
+      <option value="прочий документ">прочий документ</option>
+    </select>
+    <input name="file_path" placeholder="Локальный путь к файлу">
+    <textarea name="summary" placeholder="Краткое описание"></textarea>
+    <button type="submit">Добавить документ</button>
+  </form>
+</details>
 
 <div class="cards">
   {% for document in documents %}
     <article class="doc-card">
       <div>
         <strong>{{ document.title }}</strong>
-        <small>{{ document.type }} · {{ document.status }}</small>
+        <small>{{ document.type }} / {{ document.status }}</small>
       </div>
       {% if document.file_path %}<p>{{ document.file_path }}</p>{% endif %}
+      {% set entity_type = "document" %}
+      {% set entity_id = document.id %}
+      {% set return_tab = "documents" %}
+      {% include "partials/entity_links.html" %}
     </article>
   {% else %}
     <p class="muted">Документов пока нет.</p>

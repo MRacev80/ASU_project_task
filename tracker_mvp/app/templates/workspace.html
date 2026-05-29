@@ -9,12 +9,12 @@
       <h1>Папка проекта</h1>
     </div>
     <p class="muted">
-      Откройте существующую папку проекта или создайте новую. Внутри папки будут храниться база, документы, архив, бэкапы и рабочая область агентов.
+      Укажите одну папку проекта на диске сервера. Внутри нее приложение хранит базу, документы, архив, резервные копии и рабочую область агентов.
     </p>
 
     {% if active_workspace %}
       <div class="notice">
-        Активная папка: <strong>{{ active_workspace }}</strong>
+        Активная папка проекта: <strong>{{ active_workspace }}</strong>
       </div>
     {% endif %}
 
@@ -44,20 +44,20 @@
         Объект автоматизации
         <input name="automation_object">
       </label>
-      <button type="submit">Создать и открыть</button>
+      <button type="submit">Создать папку и карточку проекта</button>
     </form>
   </section>
 
   <section class="panel">
     <div class="panel-header">
-      <h2>Открыть существующую папку</h2>
+      <h2>Открыть существующую папку проекта</h2>
     </div>
     <form class="stack" method="post" action="/workspace/open">
       <label>
         Путь к папке проекта
         <input name="path" placeholder="C:\Users\gami\Orgtask\03_Проекты\Кран" required>
       </label>
-      <button type="submit">Открыть</button>
+      <button type="submit">Открыть папку проекта</button>
     </form>
   </section>
 </section>
